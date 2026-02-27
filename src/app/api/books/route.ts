@@ -1,23 +1,30 @@
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { desc, eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { books } from "@/lib/db/schema";
 import { detectBooksWithLLM } from "@/lib/vision-books";
 import { enrichBook } from "@/lib/book-enrichment";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 
-export async function GET() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+async function getUserIdFromRequest(request: Request) {
+  const auth = request.headers.get("authorization") || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  if (!token) return null;
 
-  if (!session?.user?.id) {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data.user) return null;
+  return data.user.id;
+}
+
+export async function GET(request: Request) {
+  const userId = await getUserIdFromRequest(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const result = await db.query.books.findMany({
-    where: eq(books.userId, session.user.id),
+    where: eq(books.userId, userId),
     orderBy: [desc(books.createdAt)],
   });
 
@@ -25,11 +32,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user?.id) {
+  const userId = await getUserIdFromRequest(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -65,7 +69,7 @@ export async function POST(request: Request) {
     .insert(books)
     .values(
       enriched.map((item) => ({
-        userId: session.user.id,
+        userId,
         ...item,
       })),
     )

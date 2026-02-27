@@ -6,13 +6,13 @@ A Next.js 16 app for photographing your physical books, auto-detecting metadata 
 
 - Next.js 16 (App Router)
 - Tailwind CSS
-- Better Auth (email/password sign up + sign in)
+- Supabase Auth (email/password + Google + GitHub)
 - Supabase Postgres (or any Postgres) + Drizzle ORM
 - LLM vision extraction via Vercel AI SDK (`ai`) + OpenRouter
 
 ## Features
 
-- Sign up / sign in with Better Auth
+- Sign up / sign in with Supabase Auth (email/password)
 - Camera capture in browser (`getUserMedia`)
 - Multi-book detection from one image using LLM vision
 - Parsed title + author + confidence per detected book
@@ -37,9 +37,8 @@ cp .env.example .env
 3. Set env values in `.env`:
 
 ```env
-BETTER_AUTH_SECRET=your-long-secret
-BETTER_AUTH_URL=http://localhost:3000
-NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_DB_URL=postgres://...
 DATABASE_URL=postgres://...
 OPENROUTER_API_KEY=...

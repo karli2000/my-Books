@@ -11,7 +11,7 @@ export default function Home() {
           Photograph your shelves. Auto-detect books. Build a searchable personal library.
         </h1>
         <p className="mt-5 max-w-2xl text-zinc-300">
-          A moody bookshelf-inspired app using Next.js 16, Tailwind, Better Auth, and Supabase.
+          A moody bookshelf-inspired app using Next.js 16, Tailwind, Supabase Auth, and Supabase Postgres.
           Snap book spines or covers and let OCR fill title + author before saving.
         </p>
         <div className="mt-8 flex gap-3">

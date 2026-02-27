@@ -50,7 +50,7 @@ export const books = pgTable(
   "books",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull(),
     title: text("title").notNull(),
     author: text("author").notNull(),
     subtitle: text("subtitle"),

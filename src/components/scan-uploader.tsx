@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 type Book = {
   id: string;
@@ -53,9 +54,16 @@ export function ScanUploader({ initialBooks }: { initialBooks: Book[] }) {
     setPreview(dataUrl);
 
     setLoading(true);
+    const supabase = getSupabaseBrowserClient();
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+
     const res = await fetch("/api/books", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({ imageData: dataUrl }),
     });
     setLoading(false);
