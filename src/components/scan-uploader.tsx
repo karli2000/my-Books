@@ -8,6 +8,8 @@ type Book = {
   author: string;
   confidence: number;
   createdAt: string;
+  isbn?: string | null;
+  publisher?: string | null;
   coverUrl?: string | null;
 };
 
@@ -64,7 +66,12 @@ export function ScanUploader({ initialBooks }: { initialBooks: Book[] }) {
     }
 
     const payload = await res.json();
-    setBooks((prev) => [payload.book, ...prev]);
+    const newBooks = (payload.books ?? []) as Book[];
+    if (!newBooks.length) {
+      alert("No books detected. Try a clearer photo of the shelf/spines.");
+      return;
+    }
+    setBooks((prev) => [...newBooks, ...prev]);
   };
 
   return (
@@ -80,7 +87,7 @@ export function ScanUploader({ initialBooks }: { initialBooks: Book[] }) {
           <button onClick={capture} className="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-white">Capture & detect</button>
           <button onClick={stopCamera} className="rounded-lg border border-zinc-600 px-4 py-2 text-sm text-zinc-200 hover:border-zinc-400">Stop</button>
         </div>
-        {loading && <p className="mt-3 text-sm text-amber-200">Detecting title and author…</p>}
+        {loading && <p className="mt-3 text-sm text-amber-200">Detecting multiple books + fetching ISBN metadata…</p>}
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-zinc-900/70 p-4">
@@ -104,6 +111,8 @@ export function ScanUploader({ initialBooks }: { initialBooks: Book[] }) {
               <h3 className="font-medium text-zinc-100">{book.title}</h3>
               <p className="text-sm text-zinc-300">{book.author}</p>
               <p className="mt-1 text-xs text-amber-300">confidence {book.confidence}%</p>
+              {book.isbn ? <p className="text-xs text-zinc-400">ISBN: {book.isbn}</p> : null}
+              {book.publisher ? <p className="text-xs text-zinc-500">{book.publisher}</p> : null}
             </article>
           ))}
           {books.length === 0 && <p className="text-sm text-zinc-400">No books yet.</p>}

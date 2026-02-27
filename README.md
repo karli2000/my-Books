@@ -8,14 +8,15 @@ A Next.js 16 app for photographing your physical books, auto-detecting metadata 
 - Tailwind CSS
 - Better Auth (email/password sign up + sign in)
 - Supabase Postgres (or any Postgres) + Drizzle ORM
-- OCR via `tesseract.js`
+- LLM vision extraction via Vercel AI SDK (`ai`) + OpenRouter
 
 ## Features
 
 - Sign up / sign in with Better Auth
 - Camera capture in browser (`getUserMedia`)
-- OCR extraction endpoint
-- Parsed title + author + confidence
+- Multi-book detection from one image using LLM vision
+- Parsed title + author + confidence per detected book
+- Free metadata enrichment from OpenLibrary + Google Books (ISBN/publisher/year when available)
 - Save scans to database
 - Personal library view per user
 
@@ -41,6 +42,9 @@ BETTER_AUTH_URL=http://localhost:3000
 NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
 SUPABASE_DB_URL=postgres://...
 DATABASE_URL=postgres://...
+OPENROUTER_API_KEY=...
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+BOOKS_VISION_MODEL=qwen/qwen2.5-vl-7b-instruct
 ```
 
 4. Create/update schema

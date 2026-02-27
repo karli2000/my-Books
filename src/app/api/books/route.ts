@@ -1,11 +1,11 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { desc, eq } from "drizzle-orm";
-import Tesseract from "tesseract.js";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { books } from "@/lib/db/schema";
-import { parseBookText } from "@/lib/ocr";
+import { detectBooksWithLLM } from "@/lib/vision-books";
+import { enrichBook } from "@/lib/book-enrichment";
 
 export async function GET() {
   const session = await auth.api.getSession({
@@ -33,43 +33,43 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json()) as {
-    imageData?: string;
-    title?: string;
-    author?: string;
-    confidence?: number;
-    rawText?: string;
-  };
+  const body = (await request.json()) as { imageData?: string };
 
-  if (!body.imageData && !(body.title && body.author)) {
-    return NextResponse.json({ error: "Missing imageData or metadata" }, { status: 400 });
+  if (!body.imageData) {
+    return NextResponse.json({ error: "Missing imageData" }, { status: 400 });
   }
 
-  let extracted = {
-    title: body.title ?? "Unknown Title",
-    author: body.author ?? "Unknown Author",
-    confidence: body.confidence ?? 0,
-    rawText: body.rawText ?? "",
-  };
+  const detected = await detectBooksWithLLM(body.imageData);
 
-  if (body.imageData) {
-    const imageBase64 = body.imageData.split(",")[1] ?? body.imageData;
-    const imageBuffer = Buffer.from(imageBase64, "base64");
-    const result = await Tesseract.recognize(imageBuffer, "eng");
-    extracted = parseBookText(result.data.text, result.data.confidence);
+  if (!detected.length) {
+    return NextResponse.json({ books: [] });
   }
 
-  const [inserted] = await db
+  const enriched = await Promise.all(
+    detected.map(async (item) => {
+      const extra = await enrichBook(item.title, item.author);
+      return {
+        title: item.title,
+        author: item.author,
+        confidence: Math.round(item.confidence),
+        isbn: extra.isbn,
+        publisher: extra.publisher,
+        publishYear: extra.publishYear,
+        coverUrl: extra.coverUrl ?? body.imageData,
+        rawText: JSON.stringify({ detected: item, enrichment: extra }),
+      };
+    }),
+  );
+
+  const inserted = await db
     .insert(books)
-    .values({
-      userId: session.user.id,
-      title: extracted.title,
-      author: extracted.author,
-      confidence: extracted.confidence,
-      rawText: extracted.rawText,
-      coverUrl: body.imageData ?? null,
-    })
+    .values(
+      enriched.map((item) => ({
+        userId: session.user.id,
+        ...item,
+      })),
+    )
     .returning();
 
-  return NextResponse.json({ book: inserted });
+  return NextResponse.json({ books: inserted });
 }
